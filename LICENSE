@@ -1,0 +1,80 @@
+# Aequitas License
+
+**Version 1.0**
+
+This License governs the use of the Aequitas software, source code, APIs, and related services ("Aequitas"). It is a proprietary license. All rights are reserved unless explicitly granted in writing by the Author.
+
+
+## 1. Definitions
+
+- **"Software"** refers to the Aequitas application, including source code, compiled binaries, APIs, infrastructure, and related assets.
+- **"User"** refers to any individual or entity accessing or using Aequitas.
+- **"Author"** refers to the original creator(s) of Aequitas.
+
+
+## 2. License Grant
+
+Subject to compliance with this License, the Author grants Users a limited, non-exclusive, non-transferable, revocable license to use Aequitas solely for:
+
+- Accessing and using the hosted Aequitas service (if provided by the Author), and/or
+- Internal evaluation or personal, non-commercial use of the Software where source code access has been explicitly granted by the Author.
+
+No other rights are granted.
+
+
+## 3. Strict Restrictions
+
+Users are expressly prohibited from:
+
+- Copying, reproducing, or distributing the Software, in whole or in part
+- Using the Software or any derivative works for commercial purposes
+- Selling, sublicensing, renting, or monetizing the Software in any form
+- Creating competing products or services based on the Software
+- Removing or altering proprietary notices, attribution, or license terms
+
+
+## 4. No Redistribution
+
+The Software may not be shared, mirrored, uploaded, or otherwise made available to any third party without prior written permission from the Author. This includes modified versions, forks, or derivative works.
+
+
+## 5. Essential Functionality
+
+Aequitas may include essential operational mechanisms such as authentication, session management, and abuse prevention systems (including rate limiting). These are integral to the Software and may not be bypassed, disabled, or circumvented.
+
+
+## 6. Data and Privacy
+
+Unless otherwise stated in a separate privacy policy:
+
+- The Software does not claim ownership over user data
+- Users are responsible for compliance with applicable data protection laws
+
+
+## 7. Ownership
+
+All intellectual property rights in the Software remain exclusively with the Author. No ownership rights are transferred to the User under this License.
+
+
+## 8. Termination
+
+This License is automatically terminated upon any violation of its terms. Upon termination, all rights granted under this License are revoked, and Users must immediately cease all use of the Software and destroy any copies in their possession.
+
+
+## 9. No Warranty
+
+The Software is provided "as is" without warranties of any kind, express or implied, including but not limited to fitness for a particular purpose, merchantability, or non-infringement.
+
+The Author is not liable for any damages arising from use of the Software.
+
+
+## 10. Governing Law
+
+This License shall be governed by the laws applicable in the Author's primary jurisdiction, unless otherwise required by law.
+
+
+## 11. General Provisions
+
+This License is designed to strictly protect the Aequitas Software from unauthorized redistribution and commercial exploitation. The Author reserves the right to modify this License at any time.
+
+If you are unsure whether a use case is permitted, you must obtain explicit written permission from the Author before proceeding.

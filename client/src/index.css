@@ -1,0 +1,150 @@
+@import 'tailwindcss';
+@config "../tailwind.config.js";
+
+@font-face {
+  font-family: 'Work Sans';
+  src: url('/fonts/WorkSans-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Work Sans';
+  src: url('/fonts/WorkSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Work Sans';
+  src: url('/fonts/WorkSans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Work Sans';
+  src: url('/fonts/WorkSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Work Sans';
+  src: url('/fonts/WorkSans-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    @apply m-0 p-0 box-border;
+    scrollbar-width: thin;
+    scrollbar-color: #cbcbcd #333;
+  }
+
+  * {
+    @apply z-1;
+  }
+
+  html {
+    font-size: 62.5%;
+    @apply font-main font-normal leading-[1.4] touch-manipulation bg-dark;
+  }
+
+  body {
+    @apply font-main text-base bg-primary relative mb-6 md:mb-0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply leading-[1.2] block;
+  }
+
+  p {
+    @apply leading-[1.4] block;
+  }
+
+  li {
+    @apply block;
+  }
+}
+
+@layer components {
+  .spinner {
+    @apply rounded-[100%] border-[6px] border-solid border-description/25 border-l-cta animate-spin;
+  }
+
+  .link {
+    @apply text-blue-400 underline transition-[filter] hover:brightness-150 cursor-pointer;
+  }
+
+  .h-available {
+    min-height: calc(100vh - 12rem);
+    min-height: calc(100svh - 12rem);
+
+    @media (min-width: 831px) {
+      min-height: calc(100vh - 6rem);
+      min-height: calc(100svh - 6rem);
+    }
+  }
+
+  .hero {
+    height: calc(80svh - 12rem);
+    max-height: calc(80svh - 12rem);
+
+    @media (min-width: 831px) {
+      height: calc(80svh - 6rem);
+      max-height: calc(80svh - 6rem);
+    }
+
+    @media (max-height: 500px) {
+      height: fit-content;
+      max-height: fit-content;
+    }
+  }
+
+  .h-line {
+    @apply w-full h-[2px] bg-light-gray rounded-[5rem];
+  }
+
+  .context-menu-btn {
+    @apply block w-full bg-dark p-1 text-title text-sm font-medium text-start text-nowrap transition-[filter] hover:brightness-75 cursor-pointer;
+
+    &.danger {
+      @apply !text-danger last:border-t-1 last:border-t-description/50;
+    }
+  }
+
+  article {
+    h2 {
+      @apply text-title text-2xl font-medium mb-[4px];
+    }
+
+    h3 {
+      @apply text-title text-xl font-medium mb-1 mt-3;
+    }
+
+    h4 {
+      @apply text-title mb-1;
+    }
+
+    p {
+      @apply mb-1;
+    }
+
+    ul {
+      @apply list-disc pl-3 space-y-1 mb-1;
+
+      li {
+        @apply !list-item;
+      }
+    }
+  }
+}

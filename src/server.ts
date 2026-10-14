@@ -1,13 +1,14 @@
 import http, { IncomingMessage } from 'http';
 import { app } from './app';
 import { Socket } from 'net';
+import { initDb } from './db/initDb';
 
 const port: number = process.env.PORT ? +process.env.PORT : 5000;
 const server = http.createServer(app);
 
 async function initServer(): Promise<void> {
   try {
-    // TODO: init db
+    await initDb();
     // TODO: init cron jobs
 
     server.listen(port, () => {

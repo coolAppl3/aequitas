@@ -1,6 +1,5 @@
-import http, { IncomingMessage } from 'http';
+import http from 'http';
 import { app } from './app';
-import { Socket } from 'net';
 import { initDb } from './db/initDb';
 
 const port: number = process.env.PORT ? +process.env.PORT : 5000;

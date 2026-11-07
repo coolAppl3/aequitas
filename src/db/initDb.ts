@@ -3,6 +3,7 @@ import {
   ACCOUNT_FAILED_ATTEMPTS_LIMIT,
   ACCOUNT_FAILED_SIGN_IN_LIMIT,
 } from '../util/constants/accountConstants';
+import { AUTH_EXTENSIONS_LIMIT } from '../util/constants/authConstants';
 import { dbPool } from './db';
 
 export async function initDb(): Promise<void> {
@@ -11,6 +12,8 @@ export async function initDb(): Promise<void> {
   createAccountRecoveryTable();
   createEmailUpdateTable();
   createAccountDeletionTable();
+
+  createAuthSessionsTable();
 
   console.log('Database initialized.');
 }
@@ -108,6 +111,25 @@ async function createAccountDeletionTable(): Promise<void> {
         FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
       );`,
       [ACCOUNT_EMAILS_SENT_LIMIT, ACCOUNT_FAILED_ATTEMPTS_LIMIT]
+    );
+  } catch (err: unknown) {
+    console.log(err);
+  }
+}
+
+async function createAuthSessionsTable(): Promise<void> {
+  try {
+    await dbPool.execute(
+      `CREATE TABLE IF NOT EXISTS auth_sessions (
+        session_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
+        account_id INT UNSIGNED NOT NULL,
+        created_on_timestamp BIGINT UNSIGNED NOT NULL,
+        expiry_timestamp BIGINT UNSIGNED NOT NULL,
+        keep_signed_in BOOLEAN NOT NULL,
+        extensions_count TINYINT UNSIGNED NOT NULL CHECK(extensions_count <= ?),
+        FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
+      );`,
+      [AUTH_EXTENSIONS_LIMIT]
     );
   } catch (err: unknown) {
     console.log(err);

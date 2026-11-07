@@ -9,6 +9,7 @@ export async function initDb(): Promise<void> {
   createAccountsTable();
   createAccountVerificationTable();
   createAccountRecoveryTable();
+  createEmailUpdateTable();
 
   console.log('Database initialized.');
 }
@@ -61,6 +62,26 @@ async function createAccountRecoveryTable(): Promise<void> {
         request_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
         account_id INT UNSIGNED NOT NULL UNIQUE,
         recovery_token CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+        emails_sent TINYINT UNSIGNED NOT NULL CHECK(emails_sent <= ?),
+        failed_attempts TINYINT UNSIGNED NOT NULL CHECK(failed_attempts <= ?),
+        expiry_timestamp BIGINT UNSIGNED NOT NULL,
+        FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
+      );`,
+      [ACCOUNT_EMAILS_SENT_LIMIT, ACCOUNT_FAILED_ATTEMPTS_LIMIT]
+    );
+  } catch (err: unknown) {
+    console.log(err);
+  }
+}
+
+async function createEmailUpdateTable(): Promise<void> {
+  try {
+    await dbPool.execute(
+      `CREATE TABLE IF NOT EXISTS email_update (
+        request_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+        account_id INT UNSIGNED NOT NULL UNIQUE,
+        new_email VARCHAR(254) NOT NULL UNIQUE,
+        confirmation_code VARCHAR(10) NOT NULL COLLATE utf8mb4_bin,
         emails_sent TINYINT UNSIGNED NOT NULL CHECK(emails_sent <= ?),
         failed_attempts TINYINT UNSIGNED NOT NULL CHECK(failed_attempts <= ?),
         expiry_timestamp BIGINT UNSIGNED NOT NULL,

@@ -7,13 +7,13 @@ import { AUTH_EXTENSIONS_LIMIT } from '../util/constants/authConstants';
 import { dbPool } from './db';
 
 export async function initDb(): Promise<void> {
-  createAccountsTable();
-  createAccountVerificationTable();
-  createAccountRecoveryTable();
-  createEmailUpdateTable();
-  createAccountDeletionTable();
+  await createAccountsTable();
+  await createAccountVerificationTable();
+  await createAccountRecoveryTable();
+  await createEmailUpdateTable();
+  await createAccountDeletionTable();
 
-  createAuthSessionsTable();
+  await createAuthSessionsTable();
 
   console.log('Database initialized.');
 }

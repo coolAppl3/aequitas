@@ -15,6 +15,8 @@ export async function initDb(): Promise<void> {
 
   await createAuthSessionsTable();
 
+  await createUnexpectedErrorsTable();
+
   console.log('Database initialized.');
 }
 
@@ -130,6 +132,24 @@ async function createAuthSessionsTable(): Promise<void> {
         FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
       );`,
       [AUTH_EXTENSIONS_LIMIT]
+    );
+  } catch (err: unknown) {
+    console.log(err);
+  }
+}
+
+async function createUnexpectedErrorsTable(): Promise<void> {
+  try {
+    await dbPool.execute(
+      `CREATE TABLE IF NOT EXISTS unexpected_errors (
+        error_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+        request_method VARCHAR(10),
+        request_path VARCHAR(400),
+        error_timestamp BIGINT UNSIGNED NOT NULL,
+        error_message TEXT,
+        error_stack TEXT,
+        description VARCHAR(254)
+      );`
     );
   } catch (err: unknown) {
     console.log(err);

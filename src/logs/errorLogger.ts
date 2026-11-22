@@ -21,7 +21,7 @@ export async function logUnexpectedError(
         error_message,
         error_stack,
         description
-      ) VALUES (${generatePlaceHolders(6)});`,
+      ) VALUES (${generatePlaceHolders(7)});`,
       [
         req && req.method,
         req && req.originalUrl,

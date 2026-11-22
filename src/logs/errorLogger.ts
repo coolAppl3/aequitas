@@ -5,6 +5,7 @@ import { generatePlaceHolders } from '../util/sql/sqlUtils';
 export async function logUnexpectedError(
   req: Request | null,
   err: unknown,
+  serviceName: string | null = null,
   description: string | null = null
 ): Promise<void> {
   const currentTimestamp: number = Date.now();
@@ -15,12 +16,21 @@ export async function logUnexpectedError(
       `INSERT INTO unexpected_errors (
         request_path,
         request_method,
+        service_name,
         error_timestamp,
         error_message,
         error_stack,
         description
       ) VALUES (${generatePlaceHolders(6)});`,
-      [req && req.method, req && req.originalUrl, currentTimestamp, message, stack, description]
+      [
+        req && req.method,
+        req && req.originalUrl,
+        serviceName,
+        currentTimestamp,
+        message,
+        stack,
+        description,
+      ]
     );
   } catch (err: unknown) {
     console.log(err);

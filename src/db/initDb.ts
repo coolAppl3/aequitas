@@ -145,6 +145,7 @@ async function createUnexpectedErrorsTable(): Promise<void> {
         error_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
         request_method VARCHAR(10),
         request_path VARCHAR(400),
+        service_name VARCHAR(100),
         error_timestamp BIGINT UNSIGNED NOT NULL,
         error_message TEXT,
         error_stack TEXT,

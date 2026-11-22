@@ -5,6 +5,7 @@ import cors from 'cors';
 import express, { Application } from 'express';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import { accountsRouter } from './routers/accountsRouter';
 
 export const app: Application = express();
 
@@ -48,6 +49,7 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 // rate limiter
 
 // routes
+app.use('/api/accounts', accountsRouter);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));

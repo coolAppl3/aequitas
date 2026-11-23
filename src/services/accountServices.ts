@@ -2,6 +2,8 @@ import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { logUnexpectedError } from '../logs/errorLogger';
 import { generatePlaceHolders, isSqlError } from '../util/sql/sqlUtils';
 import { Request, Response } from 'express';
+import { generateCryptoUuid } from '../util/randomGenerator';
+import { ACCOUNT_VERIFICATION_WINDOW } from '../util/constants/accountConstants';
 
 async function checkEmailOrUsernameTakenService(
   executor: PoolConnection,
@@ -161,5 +163,52 @@ async function createAccountService(
     await logUnexpectedError(req, err, createAccountService.name);
 
     return null;
+  }
+}
+
+async function createAccountVerificationService(
+  executor: PoolConnection,
+  req: Request,
+  res: Response,
+  data: {
+    accountId: number;
+    currentTimestamp: number;
+  }
+): Promise<boolean> {
+  try {
+    const { accountId, currentTimestamp } = data;
+
+    const verificationToken: string = generateCryptoUuid();
+    const verificationExpiryTimestamp: number = currentTimestamp + ACCOUNT_VERIFICATION_WINDOW;
+
+    await executor.execute(
+      `INSERT INTO account_verification (
+        account_id,
+        verification_token,
+        emails_sent,
+        failed_attempts,
+        expiry_timestamp
+      ) VALUES (${generatePlaceHolders(5)});`,
+      [accountId, verificationToken, 1, 0, verificationExpiryTimestamp]
+    );
+
+    return true;
+  } catch (err: unknown) {
+    console.log(err);
+
+    if (res.headersSent) {
+      await logUnexpectedError(
+        req,
+        err,
+        createAccountVerificationService.name,
+        'Attempted to send two responses.'
+      );
+      return false;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+    await logUnexpectedError(req, err, createAccountVerificationService.name);
+
+    return false;
   }
 }

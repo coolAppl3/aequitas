@@ -59,7 +59,7 @@ async function createAccountService(
     console.log(err);
 
     if (res.headersSent) {
-      await logUnexpectedError(req, err, 'Attempted to send two responses.');
+      await logUnexpectedError(req, err, null, 'Attempted to send two responses.');
       return null;
     }
 

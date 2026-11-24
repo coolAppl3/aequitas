@@ -82,7 +82,7 @@ export async function createAccountService(
   req: Request,
   res: Response,
   data: {
-    publicAccountId: number;
+    publicAccountId: string;
     dateOfBirthTimestamp: number;
     email: string;
     hashedPassword: string;

@@ -166,7 +166,7 @@ export async function createAccountService(
   }
 }
 
-export async function createAccountVerificationService(
+export async function createAccountVerificationRequestService(
   executor: PoolConnection,
   req: Request,
   res: Response,
@@ -199,14 +199,14 @@ export async function createAccountVerificationService(
       await logUnexpectedError(
         req,
         err,
-        createAccountVerificationService.name,
+        createAccountVerificationRequestService.name,
         'Attempted to send two responses.'
       );
       return false;
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err, createAccountVerificationService.name);
+    await logUnexpectedError(req, err, createAccountVerificationRequestService.name);
 
     return false;
   }

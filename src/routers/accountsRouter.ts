@@ -15,7 +15,7 @@ import { logUnexpectedError } from '../logs/errorLogger';
 import {
   checkEmailOrUsernameTakenService,
   createAccountService,
-  createAccountVerificationService,
+  createAccountVerificationRequestService,
 } from '../services/accountServices';
 import { generateCryptoUuid } from '../util/randomGenerator';
 import { HASHING_ROUNDS } from '../util/constants/authConstants';
@@ -129,18 +129,14 @@ accountsRouter.post('/signUp', async (req: Request, res: Response) => {
     }
 
     const verificationToken: string = generateCryptoUuid();
-    const accountVerificationCreated: boolean = await createAccountVerificationService(
-      connection,
-      req,
-      res,
-      {
+    const accountVerificationRequestCreated: boolean =
+      await createAccountVerificationRequestService(connection, req, res, {
         accountId,
         currentTimestamp,
         verificationToken,
-      }
-    );
+      });
 
-    if (!accountVerificationCreated) {
+    if (!accountVerificationRequestCreated) {
       await connection.rollback();
       return;
     }

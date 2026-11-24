@@ -29,8 +29,8 @@ async function createAccountsTable(): Promise<void> {
         date_of_birth_timestamp BIGINT UNSIGNED NOT NULL,
         email VARCHAR(254) NOT NULL UNIQUE,
         hashed_password VARCHAR(128) NOT NULL,
-        username VARCHAR(40) NOT NULL UNIQUE,
-        display_name VARCHAR(40) NOT NULL,
+        username VARCHAR(60) NOT NULL UNIQUE,
+        display_name VARCHAR(60) NOT NULL,
         created_on_timestamp BIGINT UNSIGNED NOT NULL,
         is_verified BOOLEAN NOT NULL,
         failed_sign_in_attempts TINYINT UNSIGNED NOT NULL CHECK(failed_sign_in_attempts <= ?)

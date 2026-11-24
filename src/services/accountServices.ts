@@ -5,7 +5,7 @@ import { Request, Response } from 'express';
 import { generateCryptoUuid } from '../util/randomGenerator';
 import { ACCOUNT_VERIFICATION_WINDOW } from '../util/constants/accountConstants';
 
-async function checkEmailOrUsernameTakenService(
+export async function checkEmailOrUsernameTakenService(
   executor: PoolConnection,
   req: Request,
   res: Response,
@@ -77,7 +77,7 @@ async function checkEmailOrUsernameTakenService(
   }
 }
 
-async function createAccountService(
+export async function createAccountService(
   executor: PoolConnection,
   req: Request,
   res: Response,
@@ -166,7 +166,7 @@ async function createAccountService(
   }
 }
 
-async function createAccountVerificationService(
+export async function createAccountVerificationService(
   executor: PoolConnection,
   req: Request,
   res: Response,

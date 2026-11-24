@@ -2,7 +2,6 @@ import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { logUnexpectedError } from '../logs/errorLogger';
 import { generatePlaceHolders, isSqlError } from '../util/sql/sqlUtils';
 import { Request, Response } from 'express';
-import { generateCryptoUuid } from '../util/randomGenerator';
 import { ACCOUNT_VERIFICATION_WINDOW } from '../util/constants/accountConstants';
 
 export async function checkEmailOrUsernameTakenService(

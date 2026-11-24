@@ -155,7 +155,7 @@ accountsRouter.post('/signUp', async (req: Request, res: Response) => {
     await connection?.rollback();
 
     if (res.headersSent) {
-      await logUnexpectedError(req, err, 'Attempted to send two responses.');
+      await logUnexpectedError(req, err, null, 'Attempted to send two responses.');
       return;
     }
 

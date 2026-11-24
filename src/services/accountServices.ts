@@ -1,4 +1,4 @@
-import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { logUnexpectedError } from '../logs/errorLogger';
 import { generatePlaceHolders, isSqlError } from '../util/sql/sqlUtils';
 import { Request, Response } from 'express';
@@ -208,5 +208,71 @@ export async function createAccountVerificationRequestService(
     await logUnexpectedError(req, err, createAccountVerificationRequestService.name);
 
     return false;
+  }
+}
+
+export async function findAccountVerificationRequestService(
+  executor: Pool,
+  req: Request,
+  res: Response,
+  data: {
+    email: string;
+  }
+): Promise<string | null> {
+  try {
+    const { email } = data;
+
+    type AccountDetails = {
+      public_account_id: string;
+      is_verified: boolean;
+      verification_request_exists: boolean;
+    };
+
+    const [accountRows] = await executor.execute<RowDataPacket[]>(
+      `SELECT
+        accounts.public_account_id,
+        accounts.is_verified,
+
+        EXISTS (
+          SELECT 1 FROM account_verification WHERE account_id = accounts.account_id
+        ) AS verification_request_exists
+      FROM
+        accounts
+      WHERE
+        email = ?;`,
+      [email]
+    );
+
+    const accountDetails = accountRows[0] as AccountDetails | undefined;
+
+    if (
+      !accountDetails ||
+      accountDetails.is_verified ||
+      !accountDetails.verification_request_exists
+    ) {
+      res
+        .status(404)
+        .json({ message: 'Verification request not found.', reason: 'requestNotFound' });
+      return null;
+    }
+
+    return accountDetails.public_account_id;
+  } catch (err: unknown) {
+    console.log(err);
+
+    if (res.headersSent) {
+      await logUnexpectedError(
+        req,
+        err,
+        findAccountVerificationRequestService.name,
+        'Attempted to send two responses.'
+      );
+      return null;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+    await logUnexpectedError(req, err, findAccountVerificationRequestService.name);
+
+    return null;
   }
 }

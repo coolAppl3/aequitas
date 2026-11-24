@@ -1,0 +1,85 @@
+import { dayMilliseconds } from '../constants/globalConstants';
+import { containsInvalidWhitespace } from './globalValidation';
+
+export function isValidDateOfBirthTimestamp(timestamp: number): boolean {
+  if (!Number.isInteger(timestamp)) {
+    return false;
+  }
+
+  const dateObj: Date = new Date();
+  const youngestTimestamp: number = new Date(
+    dateObj.getFullYear() - 13,
+    dateObj.getMonth(),
+    dateObj.getDate()
+  ).getTime();
+
+  if (timestamp > youngestTimestamp) {
+    return false;
+  }
+
+  const yearMilliseconds: number = 365.25 * dayMilliseconds;
+  if (dateObj.getTime() - timestamp >= 125 * yearMilliseconds) {
+    return false;
+  }
+
+  return true;
+}
+
+export function isValidEmail(value: any): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const regex: RegExp =
+    /^(?=.{1,254}$)[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return regex.test(value);
+}
+
+export function isValidNewPassword(value: any): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const regex: RegExp = /^[A-Za-z0-9_.!#$&]{8,40}$/;
+  return regex.test(value);
+}
+
+export function isValidPassword(value: any): boolean {
+  // meant for sign in attempts - doesn't over-validate
+
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  if (value.trim() === '' || /\s/.test(value)) {
+    return false;
+  }
+
+  if (value.length > 40) {
+    return false;
+  }
+
+  return true;
+}
+
+export function isValidUsername(value: any): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const regex: RegExp = /^[A-Za-z0-9_.]{5,40}$/;
+  return regex.test(value);
+}
+
+export function isValidDisplayName(value: any): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  if (containsInvalidWhitespace(value)) {
+    return false;
+  }
+
+  const regex: RegExp = /^(?=.{1,40}$)(?!.*  )[A-Za-z]+(?: [A-Za-z]+)*$/;
+  return regex.test(value);
+}

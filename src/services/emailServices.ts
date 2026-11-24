@@ -1,3 +1,6 @@
+import accountVerificationEmailTemplate, {
+  AccountVerificationEmailTemplate,
+} from '../util/email/emailTemplates/accountVerificationTemplate';
 import { emailTransporter } from '../util/email/emailTransporter';
 
 type SendEmailService = {
@@ -17,4 +20,16 @@ async function sendEmailService({ to, subject, html }: SendEmailService): Promis
   } catch (err: unknown) {
     console.log(err);
   }
+}
+
+export async function sendAccountVerificationEmailService(
+  payload: { to: string } & AccountVerificationEmailTemplate
+): Promise<void> {
+  const { to, ...rest } = payload;
+
+  await sendEmailService({
+    to,
+    subject: 'Aequitas - Account Verification',
+    html: accountVerificationEmailTemplate({ ...rest }),
+  });
 }

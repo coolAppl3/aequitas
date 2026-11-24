@@ -173,12 +173,11 @@ export async function createAccountVerificationService(
   data: {
     accountId: number;
     currentTimestamp: number;
+    verificationToken: string;
   }
 ): Promise<boolean> {
   try {
-    const { accountId, currentTimestamp } = data;
-
-    const verificationToken: string = generateCryptoUuid();
+    const { accountId, currentTimestamp, verificationToken } = data;
     const verificationExpiryTimestamp: number = currentTimestamp + ACCOUNT_VERIFICATION_WINDOW;
 
     await executor.execute(

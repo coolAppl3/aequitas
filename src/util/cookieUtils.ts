@@ -1,0 +1,44 @@
+import { CookieOptions, Request, Response } from 'express';
+
+type AllowedCookieNames = 'authSessionId' | 'rateLimitId';
+
+export function setResponseCookie(
+  res: Response,
+  cookieName: AllowedCookieNames,
+  cookieValue: string,
+  maxAge: number | undefined,
+  httpOnly: boolean
+): void {
+  const cookieOptions: CookieOptions = {
+    httpOnly,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge,
+  };
+
+  res.cookie(cookieName, cookieValue, cookieOptions);
+}
+
+export function getRequestCookie(req: Request, cookieName: AllowedCookieNames): string | null {
+  const requestCookies: Record<string, any> = req.cookies;
+
+  if (requestCookies[cookieName]) {
+    return requestCookies[cookieName];
+  }
+
+  return null;
+}
+
+export function removeRequestCookie(
+  res: Response,
+  cookieName: AllowedCookieNames,
+  httpOnly: boolean = true
+): void {
+  res.clearCookie(cookieName, {
+    httpOnly,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+}

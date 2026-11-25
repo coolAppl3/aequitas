@@ -81,6 +81,16 @@ export async function incrementFailedAccountRequestAttemptsHelper(
     );
 
     const incremented: boolean = resultSetHeader.affectedRows > 0;
+
+    if (!incremented) {
+      await logUnexpectedError({
+        err: null,
+        req,
+        helperName: incrementFailedAccountRequestAttemptsHelper.name,
+        description: `Failed to increment failed_attempts for ${tableName}.`,
+      });
+    }
+
     return incremented;
   } catch (err: unknown) {
     console.log(err);
@@ -117,6 +127,16 @@ export async function verifyAccountHelper(
     );
 
     const accountVerified: boolean = resultSetHeader.affectedRows > 0;
+
+    if (!accountVerified) {
+      await logUnexpectedError({
+        err: null,
+        req,
+        helperName: verifyAccountHelper.name,
+        description: 'Failed to verify account..',
+      });
+    }
+
     return accountVerified;
   } catch (err: unknown) {
     console.log(err);
@@ -125,7 +145,7 @@ export async function verifyAccountHelper(
       err,
       req,
       helperName: verifyAccountHelper.name,
-      description: 'Failed to delete account.',
+      description: 'Failed to verify account..',
     });
 
     return false;
@@ -151,6 +171,16 @@ export async function deleteAccountHelper(
     );
 
     const accountDeleted: boolean = resultSetHeader.affectedRows > 0;
+
+    if (!accountDeleted) {
+      await logUnexpectedError({
+        err: null,
+        req,
+        helperName: deleteAccountHelper.name,
+        description: 'Failed to delete account.',
+      });
+    }
+
     return accountDeleted;
   } catch (err: unknown) {
     console.log(err);

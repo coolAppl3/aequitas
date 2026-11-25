@@ -18,7 +18,7 @@ import {
   createAccountService,
   createAccountVerificationRequestService,
 } from '../services/accountServices';
-import { generateCryptoUuid } from '../util/randomGenerator';
+import { generateCryptoUuid, isValidUuid } from '../util/randomGenerator';
 import { HASHING_ROUNDS } from '../util/constants/authConstants';
 import { sendAccountVerificationEmailService } from '../services/emailServices';
 
@@ -160,7 +160,7 @@ accountsRouter.post('/signUp', async (req: Request, res: Response) => {
       return;
     }
 
-    res.status(503).json({ message: 'Internal server error.' });
+    res.status(500).json({ message: 'Internal server error.' });
     await logUnexpectedError(req, err);
   } finally {
     connection?.release();
@@ -216,7 +216,7 @@ accountsRouter.post('/verification/continue', async (req: Request, res: Response
       return;
     }
 
-    res.status(503).json({ message: 'Internal server error.' });
+    res.status(500).json({ message: 'Internal server error.' });
     await logUnexpectedError(req, err);
   }
 });

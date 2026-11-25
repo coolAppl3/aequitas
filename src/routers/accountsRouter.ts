@@ -14,6 +14,7 @@ import { dbPool } from '../db/db';
 import { logUnexpectedError } from '../logs/errorLogger';
 import {
   checkEmailOrUsernameTakenService,
+  continueAccountVerificationRequestService,
   createAccountService,
   createAccountVerificationRequestService,
 } from '../services/accountServices';
@@ -163,5 +164,59 @@ accountsRouter.post('/signUp', async (req: Request, res: Response) => {
     await logUnexpectedError(req, err);
   } finally {
     connection?.release();
+  }
+});
+
+accountsRouter.post('/verification/continue', async (req: Request, res: Response) => {
+  const isSignedIn: boolean = getRequestCookie(req, 'authSessionId') !== null;
+  if (isSignedIn) {
+    res
+      .status(403)
+      .json({ message: 'You must sign out before proceeding.', reason: 'signedIn' });
+    return;
+  }
+
+  type RequestData = {
+    email: string;
+  };
+
+  const requestData: RequestData = req.body;
+
+  const expectedKeys: string[] = ['email'];
+  if (undefinedValuesDetected(requestData, expectedKeys)) {
+    res.status(400).json({ message: 'Invalid request data.' });
+    return;
+  }
+
+  const { email } = requestData;
+
+  if (!isValidEmail(email)) {
+    res.status(400).json({ message: 'Invalid email.', reason: 'invalidEmail' });
+    return;
+  }
+
+  try {
+    const publicAccountId: string | null = await continueAccountVerificationRequestService(
+      dbPool,
+      req,
+      res,
+      { email }
+    );
+
+    if (!publicAccountId) {
+      return;
+    }
+
+    res.json({ publicAccountId });
+  } catch (err: unknown) {
+    console.log(err);
+
+    if (res.headersSent) {
+      await logUnexpectedError(req, err, 'Attempted to send two responses.');
+      return;
+    }
+
+    res.status(503).json({ message: 'Internal server error.' });
+    await logUnexpectedError(req, err);
   }
 });

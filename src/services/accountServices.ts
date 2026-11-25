@@ -8,6 +8,7 @@ import {
   ACCOUNT_VERIFICATION_WINDOW,
 } from '../util/constants/accountConstants';
 import { dbPool } from '../db/db';
+import { deleteAccountHelper } from '../helpers/accountHelpers';
 
 export async function checkEmailOrUsernameTakenService(
   executor: PoolConnection,
@@ -288,6 +289,130 @@ export async function continueAccountVerificationRequestService(
       err,
       req,
       serviceName: continueAccountVerificationRequestService.name,
+    });
+
+    return null;
+  }
+}
+
+export type FindAccountVerificationRequestServiceReturnType = {
+  email: string;
+  displayName: string;
+  verificationRequestId: number;
+  verificationToken: string;
+};
+
+export async function findAccountVerificationRequestService(
+  executor: PoolConnection,
+  req: Request,
+  res: Response,
+  data: { publicAccountId: string }
+): Promise<FindAccountVerificationRequestServiceReturnType | null> {
+  try {
+    const { publicAccountId } = data;
+
+    type AccountDetails = {
+      account_id: number;
+      public_account_id: string;
+      email: string;
+      display_name: string;
+      is_verified: boolean;
+    } & (
+      | {
+          verification_request_id: number;
+          verification_token: string;
+          emails_sent: number;
+          failed_attempts: number;
+        }
+      | {
+          verification_request_id: null;
+          verification_token: null;
+          emails_sent: null;
+          failed_attempts: null;
+        }
+    );
+
+    const [accountRows] = await executor.execute<RowDataPacket[]>(
+      `SELECT
+        accounts.account_id,
+        accounts.public_account_id,
+        accounts.email,
+        accounts.display_name,
+        accounts.is_verified,
+
+        account_verification.request_id AS verification_request_id,
+        account_verification.verification_token,
+        account_verification.emails_sent,
+        account_verification.failed_attempts
+      FROM
+        accounts
+      LEFT JOIN
+        account_verification USING(account_id)
+      WHERE
+        accounts.public_account_id = ?
+      FOR UPDATE;`,
+      [publicAccountId]
+    );
+
+    const accountDetails = accountRows[0] as AccountDetails | undefined;
+
+    if (!accountDetails) {
+      res.status(404).json({ message: 'Account not found.', reason: 'accountNotFound' });
+      return null;
+    }
+
+    if (accountDetails.is_verified) {
+      res
+        .status(409)
+        .json({ message: 'Account is already verified.', reason: 'alreadyVerified' });
+      return null;
+    }
+
+    if (
+      !accountDetails.verification_request_id ||
+      accountDetails.failed_attempts >= ACCOUNT_FAILED_ATTEMPTS_LIMIT
+    ) {
+      await deleteAccountHelper(executor, req, { accountId: accountDetails.account_id });
+      res.status(404).json({ message: 'Account not found.', reason: 'accountNotFound' });
+
+      return null;
+    }
+
+    if (accountDetails.emails_sent >= ACCOUNT_EMAILS_SENT_LIMIT) {
+      res.status(403).json({
+        message: `Sent verification emails limit reached.`,
+        reason: 'emailsSentLimitReached',
+      });
+      return null;
+    }
+
+    const verificationRequestData: FindAccountVerificationRequestServiceReturnType = {
+      email: accountDetails.email,
+      displayName: accountDetails.display_name,
+      verificationRequestId: accountDetails.verification_request_id,
+      verificationToken: accountDetails.verification_token,
+    };
+
+    return verificationRequestData;
+  } catch (err: unknown) {
+    console.log(err);
+
+    if (res.headersSent) {
+      await logUnexpectedError({
+        err,
+        req,
+        serviceName: findAccountVerificationRequestService.name,
+        description: 'Attempted to send two responses.',
+      });
+
+      return null;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+    await logUnexpectedError({
+      err,
+      req,
+      serviceName: findAccountVerificationRequestService.name,
     });
 
     return null;

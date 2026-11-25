@@ -1,7 +1,10 @@
 import { Pool, PoolConnection, ResultSetHeader } from 'mysql2/promise';
 import { logUnexpectedError } from '../logs/errorLogger';
 import { Request } from 'express';
-import { ACCOUNT_EMAILS_SENT_LIMIT } from '../util/constants/accountConstants';
+import {
+  ACCOUNT_EMAILS_SENT_LIMIT,
+  ACCOUNT_FAILED_ATTEMPTS_LIMIT,
+} from '../util/constants/accountConstants';
 
 type AccountRequestTables =
   | 'account_verification'
@@ -50,6 +53,43 @@ export async function incrementAccountRequestEmailsSentHelper(
       req,
       helperName: incrementAccountRequestEmailsSentHelper.name,
       description: `Failed to increment emails_sent for ${tableName}.`,
+    });
+
+    return false;
+  }
+}
+
+export async function incrementFailedAccountRequestAttemptsHelper(
+  executor: Pool | PoolConnection,
+  req: Request,
+  data: {
+    tableName: AccountRequestTables;
+    requestId: number;
+  }
+): Promise<boolean> {
+  const { tableName, requestId } = data;
+
+  try {
+    const [resultSetHeader] = await executor.execute<ResultSetHeader>(
+      `UPDATE
+        ${tableName}
+      SET
+        failed_attempts = LEAST(?, failed_attempts + 1)
+      WHERE
+        request_id = ?;`,
+      [ACCOUNT_FAILED_ATTEMPTS_LIMIT, requestId]
+    );
+
+    const incremented: boolean = resultSetHeader.affectedRows > 0;
+    return incremented;
+  } catch (err: unknown) {
+    console.log(err);
+
+    await logUnexpectedError({
+      err,
+      req,
+      helperName: incrementFailedAccountRequestAttemptsHelper.name,
+      description: `Failed to increment failed_attempts for ${tableName}.`,
     });
 
     return false;

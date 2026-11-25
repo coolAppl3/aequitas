@@ -3,11 +3,9 @@ import { logUnexpectedError } from '../logs/errorLogger';
 import { generatePlaceHolders, isSqlError } from '../util/sql/sqlUtils';
 import { Request, Response } from 'express';
 import {
-  ACCOUNT_EMAILS_SENT_LIMIT,
   ACCOUNT_FAILED_ATTEMPTS_LIMIT,
   ACCOUNT_VERIFICATION_WINDOW,
 } from '../util/constants/accountConstants';
-import { dbPool } from '../db/db';
 import { deleteAccountHelper } from '../helpers/accountHelpers';
 
 export async function checkEmailOrUsernameTakenService(

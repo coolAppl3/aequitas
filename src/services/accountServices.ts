@@ -211,7 +211,7 @@ export async function createAccountVerificationRequestService(
   }
 }
 
-export async function findAccountVerificationRequestService(
+export async function continueAccountVerificationRequestService(
   executor: Pool,
   req: Request,
   res: Response,
@@ -264,14 +264,14 @@ export async function findAccountVerificationRequestService(
       await logUnexpectedError(
         req,
         err,
-        findAccountVerificationRequestService.name,
+        continueAccountVerificationRequestService.name,
         'Attempted to send two responses.'
       );
       return null;
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err, findAccountVerificationRequestService.name);
+    await logUnexpectedError(req, err, continueAccountVerificationRequestService.name);
 
     return null;
   }

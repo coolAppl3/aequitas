@@ -300,6 +300,8 @@ export type FindAccountVerificationRequestServiceReturnType = {
   displayName: string;
   verificationRequestId: number;
   verificationToken: string;
+  verificationEmailsSent: number;
+  failedVerificationAttempts: number;
 };
 
 export async function findAccountVerificationRequestService(
@@ -378,19 +380,13 @@ export async function findAccountVerificationRequestService(
       return null;
     }
 
-    if (accountDetails.emails_sent >= ACCOUNT_EMAILS_SENT_LIMIT) {
-      res.status(403).json({
-        message: `Sent verification emails limit reached.`,
-        reason: 'emailsSentLimitReached',
-      });
-      return null;
-    }
-
     const verificationRequestData: FindAccountVerificationRequestServiceReturnType = {
       email: accountDetails.email,
       displayName: accountDetails.display_name,
       verificationRequestId: accountDetails.verification_request_id,
       verificationToken: accountDetails.verification_token,
+      verificationEmailsSent: accountDetails.emails_sent,
+      failedVerificationAttempts: accountDetails.failed_attempts,
     };
 
     return verificationRequestData;

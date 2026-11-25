@@ -24,6 +24,7 @@ import { generateCryptoUuid, isValidUuid } from '../util/randomGenerator';
 import { HASHING_ROUNDS } from '../util/constants/authConstants';
 import { sendAccountVerificationEmailService } from '../services/emailServices';
 import { incrementAccountRequestEmailsSentHelper } from '../helpers/accountHelpers';
+import { ACCOUNT_EMAILS_SENT_LIMIT } from '../util/constants/accountConstants';
 
 export const accountsRouter: Router = express.Router();
 
@@ -274,8 +275,21 @@ accountsRouter.patch('/verification/resendEmail', async (req: Request, res: Resp
       return;
     }
 
-    const { email, displayName, verificationRequestId, verificationToken } =
-      verificationRequestData;
+    const {
+      email,
+      displayName,
+      verificationRequestId,
+      verificationToken,
+      verificationEmailsSent,
+    } = verificationRequestData;
+
+    if (verificationEmailsSent >= ACCOUNT_EMAILS_SENT_LIMIT) {
+      res.status(403).json({
+        message: `Sent verification emails limit reached.`,
+        reason: 'emailsSentLimitReached',
+      });
+      return;
+    }
 
     const incremented: boolean = await incrementAccountRequestEmailsSentHelper(
       connection,

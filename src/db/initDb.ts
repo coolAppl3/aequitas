@@ -143,10 +143,11 @@ async function createUnexpectedErrorsTable(): Promise<void> {
     await dbPool.execute(
       `CREATE TABLE IF NOT EXISTS unexpected_errors (
         error_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+        error_timestamp BIGINT UNSIGNED NOT NULL,
         request_method VARCHAR(10),
         request_path VARCHAR(400),
         service_name VARCHAR(100),
-        error_timestamp BIGINT UNSIGNED NOT NULL,
+        helper_name VARCHAR(100),
         error_message TEXT,
         error_stack TEXT,
         description VARCHAR(254)

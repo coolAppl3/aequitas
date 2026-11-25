@@ -296,6 +296,7 @@ export async function continueAccountVerificationRequestService(
 }
 
 export type FindAccountVerificationRequestServiceReturnType = {
+  accountId: number;
   email: string;
   displayName: string;
   verificationRequestId: number;
@@ -381,6 +382,7 @@ export async function findAccountVerificationRequestService(
     }
 
     const verificationRequestData: FindAccountVerificationRequestServiceReturnType = {
+      accountId: accountDetails.account_id,
       email: accountDetails.email,
       displayName: accountDetails.display_name,
       verificationRequestId: accountDetails.verification_request_id,

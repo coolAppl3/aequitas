@@ -56,6 +56,42 @@ export async function incrementAccountRequestEmailsSentHelper(
   }
 }
 
+export async function verifyAccountHelper(
+  executor: Pool | PoolConnection,
+  req: Request,
+  data: {
+    accountId: number;
+  }
+): Promise<boolean> {
+  try {
+    const { accountId } = data;
+
+    const [resultSetHeader] = await executor.execute<ResultSetHeader>(
+      `UPDATE
+          accounts
+        SET
+          is_verified = ?
+        WHERE
+          account_id = ?;`,
+      [true, accountId]
+    );
+
+    const accountVerified: boolean = resultSetHeader.affectedRows > 0;
+    return accountVerified;
+  } catch (err: unknown) {
+    console.log(err);
+
+    await logUnexpectedError({
+      err,
+      req,
+      helperName: verifyAccountHelper.name,
+      description: 'Failed to delete account.',
+    });
+
+    return false;
+  }
+}
+
 export async function deleteAccountHelper(
   executor: Pool | PoolConnection,
   req: Request,

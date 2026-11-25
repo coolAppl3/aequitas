@@ -2,7 +2,12 @@ import { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/pro
 import { logUnexpectedError } from '../logs/errorLogger';
 import { generatePlaceHolders, isSqlError } from '../util/sql/sqlUtils';
 import { Request, Response } from 'express';
-import { ACCOUNT_VERIFICATION_WINDOW } from '../util/constants/accountConstants';
+import {
+  ACCOUNT_EMAILS_SENT_LIMIT,
+  ACCOUNT_FAILED_ATTEMPTS_LIMIT,
+  ACCOUNT_VERIFICATION_WINDOW,
+} from '../util/constants/accountConstants';
+import { dbPool } from '../db/db';
 
 export async function checkEmailOrUsernameTakenService(
   executor: PoolConnection,
@@ -35,12 +40,12 @@ export async function checkEmailOrUsernameTakenService(
 
     if (!takenStatus) {
       res.status(500).json({ message: 'Internal server error.' });
-      await logUnexpectedError(
+      await logUnexpectedError({
+        err: null,
         req,
-        null,
-        checkEmailOrUsernameTakenService.name,
-        'Failed to fetch taken status.'
-      );
+        serviceName: checkEmailOrUsernameTakenService.name,
+        description: 'Failed to fetch taken status.',
+      });
 
       return true;
     }
@@ -60,17 +65,20 @@ export async function checkEmailOrUsernameTakenService(
     console.log(err);
 
     if (res.headersSent) {
-      await logUnexpectedError(
-        req,
+      await logUnexpectedError({
         err,
-        checkEmailOrUsernameTakenService.name,
-        'Attempted to send two responses.'
-      );
+        req,
+        description: 'Attempted to send two responses.',
+      });
       return true;
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err, checkEmailOrUsernameTakenService.name);
+    await logUnexpectedError({
+      err,
+      req,
+      serviceName: checkEmailOrUsernameTakenService.name,
+    });
 
     return true;
   }
@@ -132,18 +140,17 @@ export async function createAccountService(
     console.log(err);
 
     if (res.headersSent) {
-      await logUnexpectedError(
-        req,
+      await logUnexpectedError({
         err,
-        createAccountService.name,
-        'Attempted to send two responses.'
-      );
+        req,
+        description: 'Attempted to send two responses.',
+      });
       return null;
     }
 
     if (!isSqlError(err)) {
       res.status(500).json({ message: 'Internal server error.' });
-      logUnexpectedError(req, err);
+      await logUnexpectedError({ err, req });
 
       return null;
     }
@@ -159,7 +166,11 @@ export async function createAccountService(
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err, createAccountService.name);
+    await logUnexpectedError({
+      err,
+      req,
+      serviceName: createAccountService.name,
+    });
 
     return null;
   }
@@ -195,17 +206,20 @@ export async function createAccountVerificationRequestService(
     console.log(err);
 
     if (res.headersSent) {
-      await logUnexpectedError(
-        req,
+      await logUnexpectedError({
         err,
-        createAccountVerificationRequestService.name,
-        'Attempted to send two responses.'
-      );
+        req,
+        description: 'Attempted to send two responses.',
+      });
       return false;
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err, createAccountVerificationRequestService.name);
+    await logUnexpectedError({
+      err,
+      req,
+      serviceName: createAccountVerificationRequestService.name,
+    });
 
     return false;
   }
@@ -261,17 +275,20 @@ export async function continueAccountVerificationRequestService(
     console.log(err);
 
     if (res.headersSent) {
-      await logUnexpectedError(
-        req,
+      await logUnexpectedError({
         err,
-        continueAccountVerificationRequestService.name,
-        'Attempted to send two responses.'
-      );
+        req,
+        description: 'Attempted to send two responses.',
+      });
       return null;
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err, continueAccountVerificationRequestService.name);
+    await logUnexpectedError({
+      err,
+      req,
+      serviceName: continueAccountVerificationRequestService.name,
+    });
 
     return null;
   }

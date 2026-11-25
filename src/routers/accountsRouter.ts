@@ -156,12 +156,16 @@ accountsRouter.post('/signUp', async (req: Request, res: Response) => {
     await connection?.rollback();
 
     if (res.headersSent) {
-      await logUnexpectedError(req, err, null, 'Attempted to send two responses.');
+      await logUnexpectedError({
+        err,
+        req,
+        description: 'Attempted to send two responses.',
+      });
       return;
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err);
+    await logUnexpectedError({ err, req });
   } finally {
     connection?.release();
   }
@@ -212,11 +216,15 @@ accountsRouter.post('/verification/continue', async (req: Request, res: Response
     console.log(err);
 
     if (res.headersSent) {
-      await logUnexpectedError(req, err, 'Attempted to send two responses.');
+      await logUnexpectedError({
+        err,
+        req,
+        description: 'Attempted to send two responses.',
+      });
       return;
     }
 
     res.status(500).json({ message: 'Internal server error.' });
-    await logUnexpectedError(req, err);
+    await logUnexpectedError({ err, req });
   }
 });

@@ -2,34 +2,41 @@ import { Request } from 'express';
 import { dbPool } from '../db/db';
 import { generatePlaceHolders } from '../util/sql/sqlUtils';
 
-export async function logUnexpectedError(
-  req: Request | null,
-  err: unknown,
-  serviceName: string | null = null,
-  description: string | null = null
-): Promise<void> {
+type LogUnexpectedErrorData = {
+  err: unknown;
+  req?: Request;
+  serviceName?: string;
+  helperName?: string;
+  description?: string;
+};
+
+export async function logUnexpectedError(errorData: LogUnexpectedErrorData): Promise<void> {
+  const { err, req, serviceName, helperName, description } = errorData;
+
   const currentTimestamp: number = Date.now();
   const { message, stack } = getErrorData(err);
 
   try {
     await dbPool.execute(
       `INSERT INTO unexpected_errors (
+        error_timestamp,
         request_path,
         request_method,
         service_name,
-        error_timestamp,
+        helper_name,
         error_message,
         error_stack,
         description
-      ) VALUES (${generatePlaceHolders(7)});`,
+      ) VALUES (${generatePlaceHolders(8)});`,
       [
-        req && req.method,
-        req && req.originalUrl,
-        serviceName,
         currentTimestamp,
-        message,
-        stack,
-        description,
+        req?.method || null,
+        req?.originalUrl || null,
+        serviceName || null,
+        helperName || null,
+        message || null,
+        stack || null,
+        description || null,
       ]
     );
   } catch (err: unknown) {

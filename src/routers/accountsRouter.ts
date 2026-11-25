@@ -17,10 +17,13 @@ import {
   continueAccountVerificationRequestService,
   createAccountService,
   createAccountVerificationRequestService,
+  findAccountVerificationRequestService,
+  FindAccountVerificationRequestServiceReturnType,
 } from '../services/accountServices';
 import { generateCryptoUuid, isValidUuid } from '../util/randomGenerator';
 import { HASHING_ROUNDS } from '../util/constants/authConstants';
 import { sendAccountVerificationEmailService } from '../services/emailServices';
+import { incrementAccountRequestEmailsSentHelper } from '../helpers/accountHelpers';
 
 export const accountsRouter: Router = express.Router();
 
@@ -226,5 +229,95 @@ accountsRouter.post('/verification/continue', async (req: Request, res: Response
 
     res.status(500).json({ message: 'Internal server error.' });
     await logUnexpectedError({ err, req });
+  }
+});
+
+accountsRouter.patch('/verification/resendEmail', async (req: Request, res: Response) => {
+  const isSignedIn: boolean = getRequestCookie(req, 'authSessionId') !== null;
+  if (isSignedIn) {
+    res
+      .status(403)
+      .json({ message: 'You must sign out before proceeding.', reason: 'signedIn' });
+    return;
+  }
+
+  type RequestData = {
+    publicAccountId: string;
+  };
+
+  const requestData: RequestData = req.body;
+
+  const expectedKeys: string[] = ['publicAccountId'];
+  if (undefinedValuesDetected(requestData, expectedKeys)) {
+    res.status(400).json({ message: 'Invalid request data.' });
+    return;
+  }
+
+  const { publicAccountId } = requestData;
+
+  if (!isValidUuid(publicAccountId)) {
+    res.status(400).json({ message: 'Invalid account ID.', reason: 'invalidPublicAccountId' });
+    return;
+  }
+
+  let connection: PoolConnection | null = null;
+
+  try {
+    connection = await dbPool.getConnection();
+    await connection.beginTransaction();
+
+    const verificationRequestData: FindAccountVerificationRequestServiceReturnType | null =
+      await findAccountVerificationRequestService(connection, req, res, { publicAccountId });
+
+    if (!verificationRequestData) {
+      await connection.rollback();
+      return;
+    }
+
+    const { email, displayName, verificationRequestId, verificationToken } =
+      verificationRequestData;
+
+    const incremented: boolean = await incrementAccountRequestEmailsSentHelper(
+      connection,
+      req,
+      {
+        tableName: 'account_verification',
+        requestId: verificationRequestId,
+      }
+    );
+
+    if (!incremented) {
+      await connection.rollback();
+      res.status(500).json({ message: 'Internal server error.' });
+
+      return;
+    }
+
+    await connection.commit();
+    res.json({});
+
+    await sendAccountVerificationEmailService({
+      to: email,
+      displayName: displayName,
+      publicAccountId: publicAccountId,
+      verificationToken: verificationToken,
+    });
+  } catch (err: unknown) {
+    console.log(err);
+    await connection?.rollback();
+
+    if (res.headersSent) {
+      await logUnexpectedError({
+        err,
+        req,
+        description: 'Attempted to send two responses.',
+      });
+      return;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+    await logUnexpectedError({ err, req });
+  } finally {
+    connection?.release();
   }
 });

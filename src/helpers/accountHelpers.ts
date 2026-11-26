@@ -113,9 +113,9 @@ export async function verifyAccountHelper(
     accountId: number;
   }
 ): Promise<boolean> {
-  try {
-    const { accountId } = data;
+  const { accountId } = data;
 
+  try {
     const [resultSetHeader] = await executor.execute<ResultSetHeader>(
       `UPDATE
           accounts
@@ -159,9 +159,9 @@ export async function deleteAccountHelper(
     accountId: number;
   }
 ): Promise<boolean> {
-  try {
-    const { accountId } = data;
+  const { accountId } = data;
 
+  try {
     const [resultSetHeader] = await executor.execute<ResultSetHeader>(
       `DELETE FROM
         accounts

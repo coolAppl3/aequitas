@@ -17,9 +17,9 @@ export async function checkEmailOrUsernameTakenService(
     username: string;
   }
 ): Promise<boolean> {
-  try {
-    const { email, username } = data;
+  const { email, username } = data;
 
+  try {
     type TakenStatus = {
       email_taken: boolean;
       email_temporarily_taken: boolean;
@@ -185,10 +185,10 @@ export async function createAccountVerificationRequestService(
     verificationToken: string;
   }
 ): Promise<boolean> {
-  try {
-    const { accountId, currentTimestamp, verificationToken } = data;
-    const verificationExpiryTimestamp: number = currentTimestamp + ACCOUNT_VERIFICATION_WINDOW;
+  const { accountId, currentTimestamp, verificationToken } = data;
+  const verificationExpiryTimestamp: number = currentTimestamp + ACCOUNT_VERIFICATION_WINDOW;
 
+  try {
     await executor.execute(
       `INSERT INTO account_verification (
         account_id,
@@ -232,9 +232,9 @@ export async function continueAccountVerificationRequestService(
     email: string;
   }
 ): Promise<string | null> {
-  try {
-    const { email } = data;
+  const { email } = data;
 
+  try {
     type AccountDetails = {
       public_account_id: string;
       is_verified: boolean;
@@ -309,9 +309,9 @@ export async function findAccountVerificationRequestService(
   res: Response,
   data: { publicAccountId: string }
 ): Promise<FindAccountVerificationRequestServiceReturnType | null> {
-  try {
-    const { publicAccountId } = data;
+  const { publicAccountId } = data;
 
+  try {
     type AccountDetails = {
       account_id: number;
       public_account_id: string;

@@ -8,6 +8,7 @@ import {
   isValidDisplayName,
   isValidEmail,
   isValidNewPassword,
+  isValidPassword,
   isValidUsername,
 } from '../util/validation/accountValidation';
 import { dbPool } from '../db/db';
@@ -19,6 +20,7 @@ import {
   createAccountVerificationRequestService,
   findAccountVerificationRequestService,
   FindAccountVerificationRequestServiceReturnType,
+  signInService,
 } from '../services/accountServices';
 import { generateCryptoUuid, isValidUuid } from '../util/randomGenerator';
 import { HASHING_ROUNDS } from '../util/constants/authConstants';
@@ -443,6 +445,84 @@ accountsRouter.patch('/verification/confirm', async (req: Request, res: Response
 
     await connection.commit();
     res.json({ authSessionCreated });
+  } catch (err: unknown) {
+    console.log(err);
+    await connection?.rollback();
+
+    if (res.headersSent) {
+      await logUnexpectedError({
+        err,
+        req,
+        description: 'Attempted to send two responses.',
+      });
+      return;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+    await logUnexpectedError({ err, req });
+  } finally {
+    connection?.release();
+  }
+});
+
+accountsRouter.post('/signIn', async (req: Request, res: Response) => {
+  const isSignedIn: boolean = getRequestCookie(req, 'authSessionId') !== null;
+  if (isSignedIn) {
+    res
+      .status(403)
+      .json({ message: 'You must sign out before proceeding.', reason: 'signedIn' });
+    return;
+  }
+
+  type RequestData = {
+    email: string;
+    password: string;
+    keepSignedIn: boolean;
+  };
+
+  const requestData: RequestData = req.body;
+
+  const expectedKeys: string[] = ['email', 'password', 'keepSignedIn'];
+  if (undefinedValuesDetected(requestData, expectedKeys)) {
+    res.status(400).json({ message: 'Invalid request data.' });
+    return;
+  }
+
+  if (typeof requestData.keepSignedIn !== 'boolean') {
+    requestData.keepSignedIn = false;
+  }
+
+  const { email, password, keepSignedIn } = requestData;
+
+  if (!isValidEmail(email)) {
+    res.status(400).json({ message: 'Invalid email.', reason: 'invalidEmail' });
+    return;
+  }
+
+  if (!isValidPassword(password)) {
+    res.status(400).json({ message: 'Invalid password.', reason: 'invalidPassword' });
+    return;
+  }
+
+  let connection: PoolConnection | null = null;
+
+  try {
+    connection = await dbPool.getConnection();
+    await connection.beginTransaction();
+
+    const authSessionCreated: boolean = await signInService(connection, req, res, {
+      email,
+      password,
+      keepSignedIn,
+    });
+
+    if (!authSessionCreated) {
+      await connection.rollback();
+      return false;
+    }
+
+    await connection.commit();
+    res.json({});
   } catch (err: unknown) {
     console.log(err);
     await connection?.rollback();

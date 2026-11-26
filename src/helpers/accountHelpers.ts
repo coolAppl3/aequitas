@@ -1,10 +1,13 @@
 import { Pool, PoolConnection, ResultSetHeader } from 'mysql2/promise';
 import { logUnexpectedError } from '../logs/errorLogger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import {
   ACCOUNT_EMAILS_SENT_LIMIT,
   ACCOUNT_FAILED_ATTEMPTS_LIMIT,
+  ACCOUNT_FAILED_SIGN_IN_LIMIT,
 } from '../util/constants/accountConstants';
+import { purgeAuthSessionsHelper } from './authHelpers';
+import { removeRequestCookie } from '../util/cookieUtils';
 
 type AccountRequestTables =
   | 'account_verification'
@@ -190,6 +193,100 @@ export async function deleteAccountHelper(
       req,
       helperName: deleteAccountHelper.name,
       description: 'Failed to delete account.',
+    });
+
+    return false;
+  }
+}
+
+export async function handleIncorrectPasswordHelper(
+  executor: Pool,
+  req: Request,
+  res: Response,
+  data: {
+    accountId: number;
+    failedSignInAttempts: number;
+  }
+): Promise<void> {
+  const { accountId, failedSignInAttempts } = data;
+
+  try {
+    const incremented: boolean = await incrementFailedSignInAttemptsHelper(
+      accountId,
+      executor,
+      req
+    );
+    const hasBeenLocked: boolean =
+      failedSignInAttempts + 1 >= ACCOUNT_FAILED_SIGN_IN_LIMIT && incremented;
+
+    if (hasBeenLocked) {
+      removeRequestCookie(res, 'authSessionId');
+      await purgeAuthSessionsHelper(executor, req, { accountId });
+    }
+
+    res.status(401).json({
+      message: `Incorrect password.${hasBeenLocked ? ' Account locked.' : ''}`,
+      reason: hasBeenLocked ? 'incorrectPassword_locked' : 'incorrectPassword',
+    });
+  } catch (err: unknown) {
+    console.log(err);
+
+    if (res.headersSent) {
+      await logUnexpectedError({
+        err,
+        req,
+        helperName: handleIncorrectPasswordHelper.name,
+        description: 'Attempted to send two responses.',
+      });
+
+      return;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+
+    await logUnexpectedError({
+      err,
+      req,
+      helperName: handleIncorrectPasswordHelper.name,
+    });
+  }
+}
+
+export async function incrementFailedSignInAttemptsHelper(
+  accountId: number,
+  executor: Pool | PoolConnection,
+  req: Request
+): Promise<boolean> {
+  try {
+    const [resultSetHeader] = await executor.execute<ResultSetHeader>(
+      `UPDATE
+        accounts
+      SET
+        failed_sign_in_attempts = LEAST(?, failed_sign_in_attempts + 1)
+      WHERE
+        account_id = ?;`,
+      [ACCOUNT_FAILED_SIGN_IN_LIMIT, accountId]
+    );
+
+    const incremented: boolean = resultSetHeader.affectedRows > 0;
+
+    if (!incremented) {
+      await logUnexpectedError({
+        err: null,
+        req,
+        helperName: incrementFailedSignInAttemptsHelper.name,
+        description: 'Failed to increment failed_sign_in_attempts.',
+      });
+    }
+
+    return incremented;
+  } catch (err: unknown) {
+    console.log(err);
+
+    await logUnexpectedError({
+      err,
+      req,
+      helperName: incrementFailedSignInAttemptsHelper.name,
     });
 
     return false;

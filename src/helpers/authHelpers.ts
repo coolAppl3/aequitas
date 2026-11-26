@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { setResponseCookie } from '../util/cookieUtils';
 import { dayMilliseconds, hourMilliseconds } from '../util/constants/globalConstants';
 import { AUTH_SESSIONS_LIMIT } from '../util/constants/authConstants';
@@ -15,7 +15,6 @@ export async function createAuthSessionHelper(
     accountId: number;
     keepSignedIn: boolean;
   },
-
   attemptCount: number = 1
 ): Promise<boolean> {
   if (attemptCount > 3) {
@@ -131,5 +130,35 @@ export async function createAuthSessionHelper(
 
     await logUnexpectedError({ err, req, helperName: createAuthSessionHelper.name });
     return false;
+  }
+}
+
+export async function purgeAuthSessionsHelper(
+  executor: Pool,
+  req: Request,
+  data: {
+    accountId: number;
+    authSessionIdToExclude?: string;
+  }
+): Promise<void> {
+  const { accountId, authSessionIdToExclude } = data;
+
+  try {
+    await executor.execute(
+      `DELETE FROM
+        auth_sessions
+      WHERE
+        account_id = ? ${authSessionIdToExclude ? `AND session_id != ${authSessionIdToExclude}` : ''}
+      LIMIT ${AUTH_SESSIONS_LIMIT};`,
+      [accountId]
+    );
+  } catch (err: unknown) {
+    console.log(err);
+
+    await logUnexpectedError({
+      err,
+      req,
+      helperName: purgeAuthSessionsHelper.name,
+    });
   }
 }

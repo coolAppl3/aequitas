@@ -23,8 +23,17 @@ import {
 import { generateCryptoUuid, isValidUuid } from '../util/randomGenerator';
 import { HASHING_ROUNDS } from '../util/constants/authConstants';
 import { sendAccountVerificationEmailService } from '../services/emailServices';
-import { incrementAccountRequestEmailsSentHelper } from '../helpers/accountHelpers';
-import { ACCOUNT_EMAILS_SENT_LIMIT } from '../util/constants/accountConstants';
+import {
+  deleteAccountHelper,
+  incrementAccountRequestEmailsSentHelper,
+  incrementFailedAccountRequestAttemptsHelper,
+  verifyAccountHelper,
+} from '../helpers/accountHelpers';
+import {
+  ACCOUNT_EMAILS_SENT_LIMIT,
+  ACCOUNT_FAILED_ATTEMPTS_LIMIT,
+} from '../util/constants/accountConstants';
+import { createAuthSessionHelper } from '../helpers/authHelpers';
 
 export const accountsRouter: Router = express.Router();
 
@@ -316,6 +325,124 @@ accountsRouter.patch('/verification/resendEmail', async (req: Request, res: Resp
       publicAccountId: publicAccountId,
       verificationToken: verificationToken,
     });
+  } catch (err: unknown) {
+    console.log(err);
+    await connection?.rollback();
+
+    if (res.headersSent) {
+      await logUnexpectedError({
+        err,
+        req,
+        description: 'Attempted to send two responses.',
+      });
+      return;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+    await logUnexpectedError({ err, req });
+  } finally {
+    connection?.release();
+  }
+});
+
+accountsRouter.patch('/verification/confirm', async (req: Request, res: Response) => {
+  const isSignedIn: boolean = getRequestCookie(req, 'authSessionId') !== null;
+  if (isSignedIn) {
+    res
+      .status(403)
+      .json({ message: 'You must sign out before proceeding.', reason: 'signedIn' });
+    return;
+  }
+
+  type RequestData = {
+    publicAccountId: string;
+    verificationToken: string;
+  };
+
+  const requestData: RequestData = req.body;
+
+  const expectedKeys: string[] = ['publicAccountId', 'verificationToken'];
+  if (undefinedValuesDetected(requestData, expectedKeys)) {
+    res.status(400).json({ message: 'Invalid request data.' });
+    return;
+  }
+
+  const { publicAccountId, verificationToken } = requestData;
+
+  if (!isValidUuid(publicAccountId)) {
+    res.status(400).json({ message: 'Invalid account ID.', reason: 'invalidPublicAccountId' });
+    return;
+  }
+
+  if (!isValidUuid(verificationToken)) {
+    res
+      .status(400)
+      .json({ message: 'Invalid verification token.', reason: 'invalidVerificationToken' });
+    return;
+  }
+
+  let connection: PoolConnection | null = null;
+
+  try {
+    connection = await dbPool.getConnection();
+    await connection.beginTransaction();
+
+    const verificationRequestData: FindAccountVerificationRequestServiceReturnType | null =
+      await findAccountVerificationRequestService(connection, req, res, { publicAccountId });
+
+    if (!verificationRequestData) {
+      await connection.rollback();
+      return;
+    }
+
+    const { accountId, verificationRequestId, failedVerificationAttempts } =
+      verificationRequestData;
+
+    if (verificationToken !== verificationRequestData.verificationToken) {
+      await connection.rollback();
+
+      const isFinalFailedAttempt: boolean =
+        failedVerificationAttempts + 1 >= ACCOUNT_FAILED_ATTEMPTS_LIMIT;
+      if (isFinalFailedAttempt) {
+        await deleteAccountHelper(dbPool, req, { accountId });
+
+        res.status(401).json({
+          message: 'Incorrect verification token.',
+          reason: 'incorrectVerificationToken_deleted',
+        });
+
+        return;
+      }
+
+      await incrementFailedAccountRequestAttemptsHelper(dbPool, req, {
+        tableName: 'account_verification',
+        requestId: verificationRequestId,
+      });
+
+      res.status(401).json({
+        message: 'Incorrect verification token.',
+        reason: 'incorrectVerificationToken',
+      });
+
+      return;
+    }
+
+    const accountVerified: boolean = await verifyAccountHelper(connection, req, { accountId });
+
+    if (!accountVerified) {
+      await connection.rollback();
+      res.status(500).json({ message: 'Internal server error.' });
+
+      return;
+    }
+
+    const authSessionCreated: boolean = await createAuthSessionHelper(connection, req, res, {
+      accountId,
+      keepSignedIn: false,
+    });
+
+    await connection.commit();
+    res.json({ authSessionCreated });
   } catch (err: unknown) {
     console.log(err);
     await connection?.rollback();

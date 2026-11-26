@@ -1,8 +1,66 @@
 # Changelog
 
-
-## [0.0.1] (2025-08-06)
+## [0.0.1] (2025-11-26)
 
 ### Features
 
-- Set up initial structure.
+- Set up initial application structure.
+- Added `dbPool`.
+- Added `initDb()`.
+- Added `emailTransporter`.
+- Added `accountVerificationEmailTemplate()`.
+- Added the following tables:
+  - `accounts`.
+  - `account_verification`.
+  - `account_recovery`.
+  - `email_update`.
+  - `account_deletion`.
+  - `auth_sessions`.
+  - `unexpected_errors`.
+- Added `accountsRouter` and the following endpoints:
+  - POST `accounts/signUp`.
+  - POST `accounts/verification/continue`.
+  - PATCH `accounts/verification/resendEmail`.
+  - PATCH `accounts/verification/confirm`.
+  - POST `accounts/signIn`.
+- Added the following services:
+  - `createAccountService()`.
+  - `checkEmailOrUsernameTakenService()`.
+  - `createAccountVerificationRequestService()`.
+  - `sendEmailService()`.
+  - `sendAccountVerificationEmailService()`.
+  - `continueAccountVerificationRequestService()`.
+  - `findAccountVerificationRequestService()`.
+  - `signInService()`.
+- Added the following helpers:
+  - `deleteAccountHelper()`.
+  - `incrementAccountRequestEmailsSentHelper()`.
+  - `verifyAccountHelper()`.
+  - `incrementFailedAccountRequestAttemptsHelper()`.
+  - `createAuthSessionHelper()`.
+  - `purgeAuthSessionsHelper()`.
+  - `incrementFailedSignInAttemptsHelper()`.
+  - `handleIncorrectPasswordHelper()`.
+- Added the following constants files:
+  - `globalConstants`.
+  - `accountConstants`.
+  - `authConstants`.
+- Added the following utility functions:
+  - `isSqlError()`.
+  - `logUnexpectedError()`.
+  - `getErrorData()`.
+  - `generateCryptoUuid()`.
+  - `generateHexCode()`.
+  - `isValidUuid()`.
+  - `isValidHexCode()`.
+  - `setResponseCookie()`.
+  - `getRequestCookie()`.
+  - `removeRequestCookie()`.
+  - `undefinedValuesDetected()`.
+  - `containsInvalidWhitespace()`.
+  - `isValidDateOfBirthTimestamp()`.
+  - `isValidEmail()`.
+  - `isValidNewPassword()`.
+  - `isValidPassword()`.
+  - `isValidUsername()`.
+  - `isValidDisplayName()`.

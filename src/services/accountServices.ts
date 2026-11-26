@@ -1,12 +1,16 @@
 import { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import bcrypt from 'bcrypt';
 import { logUnexpectedError } from '../logs/errorLogger';
 import { generatePlaceHolders, isSqlError } from '../util/sql/sqlUtils';
 import { Request, Response } from 'express';
 import {
   ACCOUNT_FAILED_ATTEMPTS_LIMIT,
+  ACCOUNT_FAILED_SIGN_IN_LIMIT,
   ACCOUNT_VERIFICATION_WINDOW,
 } from '../util/constants/accountConstants';
-import { deleteAccountHelper } from '../helpers/accountHelpers';
+import { deleteAccountHelper, handleIncorrectPasswordHelper } from '../helpers/accountHelpers';
+import { createAuthSessionHelper } from '../helpers/authHelpers';
+import { dbPool } from '../db/db';
 
 export async function checkEmailOrUsernameTakenService(
   executor: PoolConnection,
@@ -412,5 +416,102 @@ export async function findAccountVerificationRequestService(
     });
 
     return null;
+  }
+}
+
+export async function signInService(
+  executor: PoolConnection,
+  req: Request,
+  res: Response,
+  data: {
+    email: string;
+    password: string;
+    keepSignedIn: boolean;
+  }
+): Promise<boolean> {
+  const { email, password, keepSignedIn } = data;
+
+  try {
+    type AccountDetails = {
+      account_id: number;
+      hashed_password: string;
+      is_verified: boolean;
+      failed_sign_in_attempts: number;
+    };
+
+    const [accountRows] = await executor.execute<RowDataPacket[]>(
+      `SELECT
+        account_id,
+        hashed_password,
+        is_verified,
+        failed_sign_in_attempts
+      FROM
+        accounts
+      WHERE
+        email = ?
+      FOR UPDATE;`,
+      [email]
+    );
+
+    const accountDetails = accountRows[0] as AccountDetails | undefined;
+
+    if (!accountDetails || !accountDetails.is_verified) {
+      res
+        .status(404)
+        .json({ message: 'Account not found or is unverified.', reason: 'accountNotFound' });
+
+      return false;
+    }
+
+    if (accountDetails.failed_sign_in_attempts >= ACCOUNT_FAILED_SIGN_IN_LIMIT) {
+      res.status(403).json({ message: 'Account is locked.', reason: 'accountLocked' });
+      return false;
+    }
+
+    const passwordIsCorrect: boolean = await bcrypt.compare(
+      password,
+      accountDetails.hashed_password
+    );
+    if (!passwordIsCorrect) {
+      await handleIncorrectPasswordHelper(dbPool, req, res, {
+        accountId: accountDetails.account_id,
+        failedSignInAttempts: accountDetails.failed_sign_in_attempts,
+      });
+
+      return false;
+    }
+
+    const authSessionCreated: boolean = await createAuthSessionHelper(executor, req, res, {
+      accountId: accountDetails.account_id,
+      keepSignedIn,
+    });
+
+    if (!authSessionCreated) {
+      res.status(500).json({ message: 'Internal server error.' });
+    }
+
+    return authSessionCreated;
+  } catch (err: unknown) {
+    console.log(err);
+
+    if (res.headersSent) {
+      await logUnexpectedError({
+        err,
+        req,
+        serviceName: signInService.name,
+        description: 'Attempted to send two responses.',
+      });
+
+      return false;
+    }
+
+    res.status(500).json({ message: 'Internal server error.' });
+    await logUnexpectedError({
+      err,
+      req,
+      serviceName: signInService.name,
+    });
+
+    return false;
   }
 }
